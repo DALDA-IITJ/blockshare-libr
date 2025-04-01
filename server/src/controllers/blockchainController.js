@@ -87,6 +87,9 @@ export const submitTxn = async (req, res) => {
     }
     console.debug("nonce validated")
 
+    // Add Custom LIBR verification
+    const librVerified = await librVerification(transaction);
+
     // 3. Broadcast the transaction to peers
     await broadcastTransaction(transaction);
 
