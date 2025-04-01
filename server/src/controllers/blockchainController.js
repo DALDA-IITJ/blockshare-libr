@@ -90,6 +90,10 @@ export const submitTxn = async (req, res) => {
     // Add Custom LIBR verification
     const librVerified = await librVerification(transaction);
 
+    if(!librVerified) {
+        return res.status(400).json({ error: 'Invalid State Transaction' });
+    }
+
     // 3. Broadcast the transaction to peers
     await broadcastTransaction(transaction);
 
