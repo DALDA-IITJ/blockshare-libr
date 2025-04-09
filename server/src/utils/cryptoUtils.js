@@ -100,12 +100,14 @@ export const mineBlock = async () => {
     const transactions = loadMempool();
 
     const prevBlockHash = await getPrevBlockHash();
-    // console.log(prevBlockHash)
+    console.log(prevBlockHash)
     const blockNumber = await getBlockNumber() + 1;
     // console.log(blockNumber)
     const data = `${prevBlockHash}${JSON.stringify(transactions)}${blockNumber}`
     // console.log(JSON.stringify(transactions));
-    const { nonce, blockHash } = await getNonceAndHash((data));
+    const { nonce, hash } = await getNonceAndHash(data, 4);
+
+    const blockHash = hash;
     console.log("mined!");
     const newBlock = { prevBlockHash, transactions, blockNumber, nonce, blockHash };
     return newBlock;
@@ -151,20 +153,20 @@ export const mineBlock = async () => {
 // }
 
 async function getNonceAndHash(message, k) {
-    const targetPrefix = "0".repeat(k); // The required prefix of zeros
+    const targetPrefix = "0".repeat(k); // Required prefix of zeros
+    console.log("targetPrefix = ", targetPrefix);
     let nonce = 0;
     let hash;
 
     while (true) {
-        const data = `${message}${nonce}`; // Concatenate message and nonce
-        hash = crypto.createHash("sha256").update(data).digest("hex");
+        const data = `${message}${nonce}`;
+        hash = crypto.createHash("sha256").update(data, "utf8").digest("hex");
 
         if (hash.startsWith(targetPrefix)) {
-            break; // Found a hash that satisfies the condition
+            console.log(`✅ Found! Nonce: ${nonce}, Hash: ${hash}`);
+            return { nonce, hash };
         }
 
         nonce++;
     }
-
-    return { nonce, hash };
 }
