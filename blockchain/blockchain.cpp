@@ -64,10 +64,11 @@ public:
        
         confirmedLength = 0;
 
-        auto genesisBlock = make_shared<Block>("0", "0,[0:0:0:0:0,]", 1, "0f44db13f0aab69746538af21ef429884bc4b275b397352044e8ee7a4cf142bb"); // 1:0,[0:0:0:0:0,]:0:0
+        auto genesisBlock = make_shared<Block>("0", "0,[0:1:0:0:0,]", 1, "0f44db13f0aab69746538af21ef429884bc4b275b397352044e8ee7a4cf142bb"); // 1:0,[0:0:0:0:0,]:0:0
         addBlock(genesisBlock);
         Genesis = genesisBlock;
         confirmedBlockchain.push_back(genesisBlock);
+
         levels[0].push_back(genesisBlock);
 
     }
@@ -78,6 +79,7 @@ public:
             // Genesis block has no parent, just add it to the blockchain
             cout << "Genesis Block added: " << newBlock->hash << endl;
             isGenesisAdded = true;
+
             return;
         } 
         
@@ -751,6 +753,7 @@ private:
 
     // Get value { amount, nonce } for a public key provided
     Value* get(Node* node, const string& key, int depth) {
+        cout << "key = " << key << endl;
         // Case 1. BASE CASE no node
         // Return Null
         if (!node) return nullptr;
@@ -788,6 +791,7 @@ private:
         }
 
         // Not Found
+        cout << "not found" << endl;
         return nullptr;
     }
 
@@ -847,6 +851,7 @@ public:
 
     // Get value for a specific key
     Value* get(const string& key) {
+        cout << "getting..." << endl;
         return get(root, key, 0);
     }
 
@@ -867,58 +872,73 @@ public:
         return root ? root->getHash() : sha256("");
     }
 
-    int handleTransaction(string senderPublicKey, string recieverPublicKey, int senderNonce, int amountSent) { // also handle data
-        if (senderPublicKey == "" || recieverPublicKey == "" || !senderNonce) {
-            // Incomplete Data
-            return -1;
-        }
-        if (senderPublicKey == recieverPublicKey) {
-            // Trying to send to himself
-            return -2;
-        }
-        Value* senderValue = get(senderPublicKey);
-        if (senderValue == nullptr) {
-            // Sender Public Key Not Found
-            return -3;
-        }
-        if (senderNonce < 0) {
-            // Incorrect Nonce
-            return -4;
-        }
-        if (senderNonce != senderValue->nonce + 1) {
-            // Nonce Not Matched
-            return -5;
-        }
-        if (amountSent < 0) {
-            // Incorrect Amount Transferring
-            return -6;
-        } 
-        // Not Checking Negative Balance-
+    int handleTransaction(string senderPublicKey, string recieverPublicKey, int senderNonce, int amountSent) {
+    cout << "Starting Transaction\n";
+    cout << "Sender: " << senderPublicKey << ", Receiver: " << recieverPublicKey
+         << ", SenderNonce: " << senderNonce << ", Amount: " << amountSent << endl;
 
-        // Subtract Sender's Amount and increase Nonce by 1
-        int check = insert(senderPublicKey, senderValue->amount - amountSent, senderValue->nonce + 1);
-        if (check < 1) return -7;   // Transaction Failed // Should I add amount back to his account ??
-
-        // Add amount to reciever // Nonce Remains unchanged for reciever
-        Value* recieverValue = get(recieverPublicKey);
-        // If Reciever Already Exists
-        if (recieverValue != nullptr) {
-            check = insert(recieverPublicKey, recieverValue->amount + amountSent, recieverValue->nonce);
-            if (check < 1) return -7;   // Transaction Failed // Should I add amount back to his account ??
-        } else {
-            // Create a new user if doesnt exists
-            check = insert(recieverPublicKey, amountSent, 0);
-            if (check < 1) return -7;   // Transaction Failed // Should I add amount back to his account ??
-        }
-        
-
-
-        // Transaction Successful
-        cout << "Executed Transaction Successfly";
-        visualizeTree();
-        return 1;
-
+    if (senderPublicKey == "" || recieverPublicKey == "" || (!senderNonce && senderNonce != 0 )) {
+        cout << "[ERROR] Incomplete transaction data." << endl;
+        return -1;
     }
+
+    if (senderPublicKey == recieverPublicKey) {
+        cout << "[ERROR] Sender and receiver public keys are the same." << endl;
+        return -2;
+    }
+
+    Value* senderValue = get(senderPublicKey);
+    if (senderValue == nullptr) {
+        cout << "[ERROR] Sender not found in ledger." << endl;
+        return -3;
+    }
+
+    cout << "Sender Balance: " << senderValue->amount << ", Sender Stored Nonce: " << senderValue->nonce << endl;
+
+    if (senderNonce < 0) {
+        cout << "[ERROR] Sender nonce is negative." << endl;
+        return -4;
+    }
+
+    if (senderNonce != senderValue->nonce + 1) {
+        cout << "[ERROR] Nonce mismatch. Expected: " << senderValue->nonce + 1 << ", Got: " << senderNonce << endl;
+        return -5;
+    }
+
+    if (amountSent < 0) {
+        cout << "[ERROR] Invalid (negative) transaction amount." << endl;
+        return -6;
+    }
+
+    cout << "Processing sender update..." << endl;
+    int check = insert(senderPublicKey, senderValue->amount - amountSent, senderValue->nonce + 1);
+    if (check < 1) {
+        cout << "[ERROR] Failed to update sender data. Reverting..." << endl;
+        return -7;
+    }
+
+    Value* recieverValue = get(recieverPublicKey);
+    if (recieverValue != nullptr) {
+        cout << "Receiver exists. Current Balance: " << recieverValue->amount << ", Nonce: " << recieverValue->nonce << endl;
+        check = insert(recieverPublicKey, recieverValue->amount + amountSent, recieverValue->nonce);
+        if (check < 1) {
+            cout << "[ERROR] Failed to update receiver data. Consider refunding sender." << endl;
+            return -7;
+        }
+    } else {
+        cout << "Receiver not found. Creating new account..." << endl;
+        check = insert(recieverPublicKey, amountSent, 0);
+        if (check < 1) {
+            cout << "[ERROR] Failed to create receiver account. Consider refunding sender." << endl;
+            return -7;
+        }
+    }
+
+    cout << "[SUCCESS] Transaction executed successfully.\n";
+    visualizeTree();
+    return 1;
+}
+
 };
 
 Blockchain blockchain;
@@ -955,7 +975,7 @@ void executeWholeBlockTransactions(string input) {
         string sign = match[7];
 
         // Call the function fxn with the extracted values
-        // cout << "handlin txn = " << senderPublicKey<<recieverPublicKey<<senderNonce<<amount;
+        cout << "handlin txn = " << senderPublicKey<<" "<<recieverPublicKey<<" "<<senderNonce<<" "<<amount << endl;
         // cout << "Sending execution request";
         blockchainState.handleTransaction(senderPublicKey, recieverPublicKey, senderNonce, amount);
     }
@@ -966,6 +986,7 @@ string processCommand(const string& command, MerklePatriciaTree& blockchainState
 
     if (command.rfind("GET_BY_ADDRESS", 0) == 0) {
         string publickKey = command.substr(15);
+        cout << "publicKey = " << publickKey << endl;
         Value* data = blockchainState.get(publickKey);
         if (data != nullptr) {
             cout << data->amount << data->nonce << endl;
@@ -1026,7 +1047,7 @@ string processCommand(const string& command, MerklePatriciaTree& blockchainState
 
 // //Testing
 int main() {
-    blockchainState.insert("02a0a8ebb0c0eee0d31626cab16f7b5c82e6a93bc58767708310bfe8649f002a7a", 0, 0);       //MAIN ACCOUNT WITH 0 COINS
+    blockchainState.insert("0454e7a8306a670a75b6373f951076cc920b831d5828d6dfc16b7389f7a3c76edc59a38734279853046e0e80cad39971abf6a40021f0dac07495de562fc59537aa", 0, 0);       //MAIN ACCOUNT WITH 0 COINS
 
 
     // FOR SPEED ANALYSIS
