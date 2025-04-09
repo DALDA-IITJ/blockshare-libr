@@ -1070,7 +1070,7 @@ string processCommand(const string& command, MerklePatriciaTree& blockchainState
 }
 
 
-WINDOWS
+// WINDOWS
 int main() {
 
     loadEnvFile(".env");

@@ -88,11 +88,13 @@ export async function getStateOfAddress(address) {
 // Block utils
 
 export function verifyBlock(block) {
-    console.log(block);
+    console.log("verifying block = ", block.blockNumber);
     const { prevBlockHash, transactions, blockNumber, nonce, blockHash } = block;
     const data = `${prevBlockHash}${JSON.stringify(transactions)}${blockNumber}${nonce}`
+    console.log("pppxoxox = ", data);
     const calcHash = crypto.createHash('sha256').update(JSON.stringify(data)).digest('hex');
-
+    console.log("calcHash = ", calcHash)
+    console.log("blockHash = ", blockHash);
     return calcHash === blockHash;
 }
 
@@ -164,6 +166,7 @@ async function getNonceAndHash(message, k) {
 
         if (hash.startsWith(targetPrefix)) {
             console.log(`✅ Found! Nonce: ${nonce}, Hash: ${hash}`);
+            console.log("xxxpopop = ", data);
             return { nonce, hash };
         }
 

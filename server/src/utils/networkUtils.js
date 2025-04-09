@@ -154,7 +154,7 @@ export const broadcastBlock = async (block) => {
             await axios.post(`http://${node.ip}:${node.port}/node/recieve/block`, { incomingBlock: block });
             console.log(`Successfully broadcasted block to node ${node.ip}:${node.port}`);
         } catch (error) {
-            console.error(`Failed to broadcast block to node ${node.ip}:${node.port}: ${error.message}`);
+            console.error(`Failed to broadcast block to node ${node.ip}:${node.port}: ${error}`);
         }
     });
 
