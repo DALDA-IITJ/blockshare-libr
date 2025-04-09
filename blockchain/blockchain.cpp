@@ -10,6 +10,8 @@
 #include <ws2tcpip.h> // Additional TCP/IP functionality for Windows
 #include <chrono>
 #include <regex>
+#include <fstream>
+#include <cstdlib>
 
 
 using namespace std;
@@ -21,6 +23,23 @@ int k = 2;           // The K number of above parents that have to have number(c
 int m = 2;           // Minimum Difference of lengths of two forks Before the smaller one can be deleted 
 
 void executeWholeBlockTransactions(string input);
+
+void loadEnvFile(const string& filename) {
+    ifstream file(filename);
+    string line;
+
+    while (getline(file, line)) {
+        if (line.empty() || line[0] == '#') continue; // skip empty lines and comments
+
+        istringstream iss(line);
+        string key, value;
+
+        if (getline(iss, key, '=') && getline(iss, value)) {
+            setenv(key.c_str(), value.c_str(), 1); // 1 means overwrite if exists
+        }
+    }
+}
+
 
 
 
@@ -1047,7 +1066,19 @@ string processCommand(const string& command, MerklePatriciaTree& blockchainState
 
 // //Testing
 int main() {
-    blockchainState.insert("0454e7a8306a670a75b6373f951076cc920b831d5828d6dfc16b7389f7a3c76edc59a38734279853046e0e80cad39971abf6a40021f0dac07495de562fc59537aa", 0, 0);       //MAIN ACCOUNT WITH 0 COINS
+
+    loadEnvFile(".env");
+
+    const char* publicKey = getenv("PUBLIC_KEY");
+
+    if (publicKey) {
+        cout << "PUBLIC_KEY: " << publicKey << endl;
+    } else {
+        cout << "PUBLIC_KEY not set." << endl;
+        return 1;
+    }
+
+    blockchainState.insert(publicKey, 0, 0);       //MAIN ACCOUNT WITH 0 COINS
 
 
     // FOR SPEED ANALYSIS
@@ -1125,10 +1156,6 @@ int main() {
     WSACleanup();
     return 0;
 }
-
-
-
-
 
 // int main() {
     
