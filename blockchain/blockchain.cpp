@@ -13,6 +13,12 @@
 #include <fstream>
 #include <cstdlib>
 
+// #include <cstring>      // For memset
+// #include <sys/socket.h> // POSIX sockets
+// #include <netinet/in.h> // sockaddr_in
+// #include <arpa/inet.h>  // inet_ntoa
+// #include <unistd.h>     // close()
+
 
 using namespace std;
 using namespace std::chrono;
@@ -1064,7 +1070,7 @@ string processCommand(const string& command, MerklePatriciaTree& blockchainState
 }
 
 
-// //Testing
+WINDOWS
 int main() {
 
     loadEnvFile(".env");
@@ -1157,24 +1163,66 @@ int main() {
     return 0;
 }
 
+
+// LINUX
 // int main() {
-    
+//     loadEnvFile(".env");
 
-//     while (true) {
-//         string prevHash, message, hash;
-//         int blockNumber;
+//     const char* publicKey = getenv("PUBLIC_KEY");
 
-//         cout << "\nEnter block details (prevHash message blockNumber hash): ";
-//         cin >> prevHash >> message >> blockNumber >> hash;
-
-//         auto newBlock = make_shared<Block>(prevHash, message, blockNumber, hash);
-//         blockchain.addBlock(newBlock);
-//         blockchain.printBlockchain();
-//         cout << blockchain.giveBlockchainString() << endl;
-//         cout << blockchain.getLastHash() << endl;
-//         cout << blockchain.getLastLength() << endl;
-//         cout << blockchain.confirmedLength;
+//     if (publicKey) {
+//         cout << "PUBLIC_KEY: " << publicKey << endl;
+//     } else {
+//         cout << "PUBLIC_KEY not set." << endl;
+//         return 1;
 //     }
 
+//     blockchainState.insert({publicKey, 0});  // Simplified dummy logic
+
+//     // Set up server
+//     int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+//     if (serverSocket < 0) {
+//         cerr << "Socket creation failed\n";
+//         return 1;
+//     }
+
+//     sockaddr_in serverAddr;
+//     serverAddr.sin_family = AF_INET;
+//     serverAddr.sin_addr.s_addr = INADDR_ANY;
+//     serverAddr.sin_port = htons(8080);
+
+//     if (bind(serverSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+//         cerr << "Bind failed\n";
+//         close(serverSocket);
+//         return 1;
+//     }
+
+//     if (listen(serverSocket, 3) < 0) {
+//         cerr << "Listen failed\n";
+//         close(serverSocket);
+//         return 1;
+//     }
+
+//     cout << "Server is listening on port 8080...\n";
+
+//     while (true) {
+//         int clientSocket = accept(serverSocket, nullptr, nullptr);
+//         if (clientSocket < 0) {
+//             cerr << "Accept failed\n";
+//             close(serverSocket);
+//             return 1;
+//         }
+
+//         char buffer[1024] = {0};
+//         int bytesRead = read(clientSocket, buffer, 1024);
+//         if (bytesRead > 0) {
+//             string response = processCommand(string(buffer, bytesRead), blockchainState, blockchain);
+//             send(clientSocket, response.c_str(), response.size(), 0);
+//         }
+
+//         close(clientSocket);  // Close client connection
+//     }
+
+//     close(serverSocket);
 //     return 0;
 // }
