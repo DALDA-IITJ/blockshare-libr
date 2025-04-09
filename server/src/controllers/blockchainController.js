@@ -65,7 +65,7 @@ export const registerNode = async (req, res) => {
 export const submitTxn = async (req, res) => {
     const { sender, recipient, amt, data, nonce, sign } = req.body;
 
-    if (!sender || !recipient || !amt || !nonce || !sign ) {
+    if (!sender || !recipient || !amt || !nonce || !sign) {
         return res.status(400).json({ error: 'All fields (sender, recipient, amt, nonce, sign, timestamp) are required' });
     }
 
@@ -88,11 +88,11 @@ export const submitTxn = async (req, res) => {
     console.debug("nonce validated")
 
     // Add Custom LIBR verification
-    const librVerified = await librVerification(transaction);
+    // const librVerified = await librVerification(transaction);
 
-    if(!librVerified) {
-        return res.status(400).json({ error: 'Invalid State Transaction' });
-    }
+    // if(!librVerified) {
+    //     return res.status(400).json({ error: 'Invalid State Transaction' });
+    // }
 
     // 3. Broadcast the transaction to peers
     await broadcastTransaction(transaction);
@@ -132,6 +132,7 @@ export const submitTxn = async (req, res) => {
 // Controller to check balance by address
 export const checkBalanceByAdd = async (req, res) => {
     const { address } = req.params;
+    console.log("address = ", address);
     const balance = await getBalanceByAddress(address)
     console.log(balance);
 
@@ -170,7 +171,7 @@ export const getBlockchainAtTimestamp = async (req, res) => {
         }
 
         const blockchain = await loadBlockchain();
-        const filteredBlocks = blockchain.blocks.filter(block => 
+        const filteredBlocks = blockchain.blocks.filter(block =>
             block.transactions.some(tx => parseInt(tx.timestamp) <= parseInt(timestamp))
         );
 
