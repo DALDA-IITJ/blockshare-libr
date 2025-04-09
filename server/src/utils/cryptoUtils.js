@@ -8,8 +8,10 @@ import { exec } from 'child_process';
 
 import path from 'path';
 
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import { dirname } from 'path';
+
+import { Worker } from "worker_threads";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -92,7 +94,8 @@ export function verifyBlock(block) {
     const { prevBlockHash, transactions, blockNumber, nonce, blockHash } = block;
     const data = `${prevBlockHash}${JSON.stringify(transactions)}${blockNumber}${nonce}`
     console.log("pppxoxox = ", data);
-    const calcHash = crypto.createHash('sha256').update(JSON.stringify(data)).digest('hex');
+    // crypto.createHash("sha256").update(data, "utf8").digest("hex");
+    const calcHash = crypto.createHash('sha256').update(data).digest('hex');
     console.log("calcHash = ", calcHash)
     console.log("blockHash = ", blockHash);
     return calcHash === blockHash;
@@ -107,7 +110,7 @@ export const mineBlock = async () => {
     // console.log(blockNumber)
     const data = `${prevBlockHash}${JSON.stringify(transactions)}${blockNumber}`
     // console.log(JSON.stringify(transactions));
-    const { nonce, hash } = await getNonceAndHash(data, 4);
+    const { nonce, hash } = await getNonceAndHash(data, 5);
 
     const blockHash = hash;
     console.log("mined!");
@@ -154,22 +157,27 @@ export const mineBlock = async () => {
 //     }
 // }
 
-async function getNonceAndHash(message, k) {
-    const targetPrefix = "0".repeat(k); // Required prefix of zeros
-    console.log("targetPrefix = ", targetPrefix);
-    let nonce = 0;
-    let hash;
+export function getNonceAndHash(message, k) {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
 
-    while (true) {
-        const data = `${message}${nonce}`;
-        hash = crypto.createHash("sha256").update(data, "utf8").digest("hex");
+    const workerPath = pathToFileURL(path.join(__dirname, "minerWorker.mjs"));
 
-        if (hash.startsWith(targetPrefix)) {
-            console.log(`✅ Found! Nonce: ${nonce}, Hash: ${hash}`);
-            console.log("xxxpopop = ", data);
-            return { nonce, hash };
-        }
+    return new Promise((resolve, reject) => {
+        const worker = new Worker(workerPath, { type: "module" });
 
-        nonce++;
-    }
+        worker.postMessage({ message, k });
+
+        worker.on("message", (result) => {
+            resolve(result);
+        });
+
+        worker.on("error", reject);
+        worker.on("exit", (code) => {
+            if (code !== 0) {
+                reject(new Error(`Worker stopped with exit code ${code}`));
+            }
+        });
+    });
 }
+
