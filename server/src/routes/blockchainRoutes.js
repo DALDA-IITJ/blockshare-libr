@@ -1,10 +1,12 @@
 import express from 'express';
-import { registerNode, submitTxn, checkBalanceByAdd, getState, getBlockchainAtTimestamp } from '../controllers/blockchainController.js';
+import { registerNode, submitTxn, checkBalanceByAdd, getState, getBlockchainAtTimestamp, sampleTxn } from '../controllers/blockchainController.js';
 
 const router = express.Router();
 
 // Route for registering as new Node
 router.post('/contribute', registerNode);
+
+router.post('/register', sampleTxn);
 
 // Route for submitting transactions
 router.post('/submit-txn', submitTxn);

@@ -1,10 +1,10 @@
 // Logic for handling blockchain-related requests
-import { verifyNonce, loadBlockchainState, mineBlock, getBalanceByAddress } from '../utils/cryptoUtils.js';
+import { verifyNonce, loadBlockchainState, mineBlock, getBalanceByAddress, getStateOfAddress } from '../utils/cryptoUtils.js';
 import { loadPeerNodes, savePeerNodes, broadcastTransaction, broadcastBlock, syncPeerDataWithOtherNodes, pingNodeUtil, getIPv4FromIPv6 } from '../utils/networkUtils.js';
 import { addToMempool, isMempoolFull, clearMempool, showMempool } from '../utils/mempoolUtils.js';
 import { addBlockToBlockchain, loadBlockchain } from '../utils/blockchainUtils.js';
 import pkg from '../utils/ellipticUtils.cjs';
-const { verifySignature, generateKeyPair } = pkg
+const { createSignature, verifySignature, generateKeyPair } = pkg
 
 // 172.31.113.190
 /*
@@ -60,6 +60,75 @@ export const registerNode = async (req, res) => {
 
     return res.status(200).json({ message: 'Node registered successfully' });
 };
+
+// sample txn
+export const sampleTxn = async (req, res) => {
+    const { recipient } = req.body;
+
+    const timestamp = Math.floor(Date.now() / 1000);
+
+    const sender = process.env.PUBLIC_KEY;
+    const amt = "0";
+    const nonceRes = await getStateOfAddress(sender);
+
+    const { nonce } = nonceRes;
+    const data = null;
+
+    const txToSign = { sender, recipient, amt, data, nonce, timestamp };
+
+    const sign = createSignature(txToSign, process.env.PRIVATE_KEY);
+
+    const transaction = { sender, recipient, amt, data, nonce, timestamp, sign };
+
+    // 1. Verify the signature
+    const isSignatureValid = verifySignature(transaction);
+    if (!isSignatureValid) {
+        return res.status(400).json({ error: 'Invalid signature' });
+    }
+    console.debug("sign verified")
+
+    // 2. Verify the nonce (to prevent replay attacks) 
+    const isNonceValid = verifyNonce(sender, nonce);
+    if (!isNonceValid) {
+        return res.status(400).json({ error: 'Invalid nonce' });
+    }
+    console.debug("nonce validated")
+
+    // 3. Broadcast the transaction to peers
+    await broadcastTransaction(transaction);
+
+    // 4. Add transaction to the mempool, mine if full
+    addToMempool(transaction);
+    console.debug("added to mempool")
+    showMempool()
+
+    if (isMempoolFull()) {
+
+        mineBlock()
+            .then((minedBlock) => {
+                console.log("Block has been mined:", minedBlock);
+                return addBlockToBlockchain(minedBlock);
+            })
+            .then((minedBlock) => {
+                console.log("Block added to blockchain:", minedBlock);
+                return broadcastBlock(minedBlock);
+            })
+            .then(() => {
+                console.log("Block broadcasted successfully.");
+                clearMempool();
+            })
+            .catch((error) => {
+                console.error("Error in mining process:", error);
+                res.status(500).json({ error: "Error in mining process" });
+            });
+    }
+
+    res.status(201).json({
+        message: 'Account created successfully',
+        transaction
+    });
+
+}
 
 // Submit a transaction
 export const submitTxn = async (req, res) => {

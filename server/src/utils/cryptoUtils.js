@@ -73,7 +73,7 @@ export async function getStateOfAddress(address) {
     const nonceStr = response.split(":")[1];
     const balanceStr = response.split(":")[0];
 
-    console.log("tis balance str", balanceStr);
+    console.log("this balance str", balanceStr);
 
     const balance = parseInt(balanceStr)
     const nonce = parseInt(nonceStr);
