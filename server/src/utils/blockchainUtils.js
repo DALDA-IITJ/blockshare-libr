@@ -139,6 +139,8 @@ export async function loadBlockchain() {
 
 export const addBlockToBlockchain = async (newBlock) => {
 
+    // check if there is a block already with this hash somewhere in the blockchain
+
     // const newBlock = { prevBlockHash, transactions, blockNumber, nonce, blockHash }
     const { prevBlockHash, transactions, blockNumber, nonce, blockHash } = newBlock
     // INPUT IS OF TYPE string input = "nonce1,[sender1:recipient1:sendernonce1:amt1:data1:ts1:sign1,sender2:recipient2:sendernonce2:amt2:data2:ts1:sign2,sender3:recipient3:sendernonce3:amt3:data3:ts1:sign3,]";

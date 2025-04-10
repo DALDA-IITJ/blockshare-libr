@@ -4,7 +4,7 @@ import crypto from "crypto";
 
 parentPort.on("message", ({ message, k }) => {
     const targetPrefix = "0".repeat(k);
-    let nonce = 0;
+    let nonce = Math.floor(Math.random() * 1e9); // Random large starting point
     let hash;
 
     while (true) {
